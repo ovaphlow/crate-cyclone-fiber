@@ -5,6 +5,7 @@ import (
 	"os"
 	"ovaphlow/cratecyclone/configurations"
 	"ovaphlow/cratecyclone/schema"
+	"ovaphlow/cratecyclone/table"
 	"ovaphlow/cratecyclone/utilities"
 	"regexp"
 	"strings"
@@ -42,6 +43,11 @@ func Serve(addr string) {
 	app.Use(recover.New())
 
 	app.Use(func(c *fiber.Ctx) error {
+		c.Set(configurations.HeaderAPIVersion, "2024-02-03")
+		return c.Next()
+	})
+
+	app.Use(func(c *fiber.Ctx) error {
 		for _, item := range configurations.PublicUris {
 			match, _ := regexp.MatchString(item, c.Path())
 			if match {
@@ -69,14 +75,13 @@ func Serve(addr string) {
 		})
 	})
 
-	app.Get("/cyclone-api/schema", schema.EndpointGetSchema)
-	app.Post("/cyclone-api/schema", schema.EndpointPostSchema)
-	app.Put("/cyclone-api/schema", schema.EndpointPutSchema)
-	app.Delete("/cyclone-api/schema/:name", schema.EndpointDeleteSchema)
+	app.Get("/cyclone-api/db-schema", schema.EndpointGet)
 
-	app.Get("/cyclone-api/get/schema", schema.EndpointGetSchema)
-	app.Post("/cyclone-api/post/schema", schema.EndpointPostSchema)
-	app.Post("/cyclone-api/delete/schema", schema.EndpointPostSchema)
+	app.Get("/cyclone-api/db-table/:schema", table.EndpointGet)
+
+	app.Get("/cyclone-api/get/db-schema", schema.EndpointGet)
+
+	app.Get("/cyclone-api/get/db-table/:schema", table.EndpointGet)
 
 	log.Fatal(app.Listen(addr))
 }
