@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"ovaphlow/cratecyclone/configurations"
+	"ovaphlow/cratecyclone/schema"
 	"ovaphlow/cratecyclone/utilities"
 	"regexp"
 	"strings"
@@ -67,6 +68,15 @@ func Serve(addr string) {
 			"message": "hola el mondo",
 		})
 	})
+
+	app.Get("/cyclone-api/schema", schema.EndpointGetSchema)
+	app.Post("/cyclone-api/schema", schema.EndpointPostSchema)
+	app.Put("/cyclone-api/schema", schema.EndpointPutSchema)
+	app.Delete("/cyclone-api/schema/:name", schema.EndpointDeleteSchema)
+
+	app.Get("/cyclone-api/get/schema", schema.EndpointGetSchema)
+	app.Post("/cyclone-api/post/schema", schema.EndpointPostSchema)
+	app.Post("/cyclone-api/delete/schema", schema.EndpointPostSchema)
 
 	log.Fatal(app.Listen(addr))
 }
