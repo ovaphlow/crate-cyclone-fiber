@@ -1,15 +1,94 @@
 package genericimplementation
 
 import (
+	"encoding/json"
 	"fmt"
 	"ovaphlow/cratecyclone/utilities"
 	"strings"
+	"time"
+
+	"github.com/bwmarrin/snowflake"
 )
 
 type Column struct {
 	OrdinalPosition int    `json:"ordinalPosition"`
 	ColumnName      string `json:"columnName"`
 	DataType        string `json:"dataType"`
+}
+
+func create(schema *string, table *string, data map[string]interface{}) error {
+	columns, err := retrieveColumns(schema, table)
+	if err != nil {
+		return err
+	}
+	var c []string
+	var v []string
+	for _, column := range columns {
+		if column.ColumnName == "id" && column.DataType == "bigint" {
+			node, err := snowflake.NewNode(1)
+			if err != nil {
+				return err
+			}
+			data["id"] = node.Generate().Int64()
+		}
+		if column.ColumnName == "time" {
+			data["time"] = time.Now().Format("2006-01-02 15:04:05")
+		}
+		if column.ColumnName == "state" && column.DataType == "jsonb" {
+			state := map[string]interface{}{"created_at": time.Now().Format("2006-01-02 15:04:05")}
+			stateJson, err := json.Marshal(state)
+			if err != nil {
+				return err
+			}
+			data["state"] = string(stateJson)
+		}
+		c = append(c, column.ColumnName)
+		v = append(v, fmt.Sprintf("'%v'", data[column.ColumnName]))
+	}
+	q := fmt.Sprintf(
+		`insert into %s.%s (%s) values (%s)`,
+		*schema,
+		*table,
+		strings.Join(c, ", "),
+		strings.Join(v, ", "),
+	)
+	_, err = utilities.Postgres.Exec(q)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func remove(schema *string, table *string, id *string) error {
+	columns, err := retrieveColumns(schema, table)
+	if err != nil {
+		return err
+	}
+	var hasState bool
+	for _, column := range columns {
+		if column.ColumnName == "state" && column.DataType == "jsonb" {
+			hasState = true
+		}
+	}
+	if !hasState {
+		return fmt.Errorf("table %s.%s does not have state(jsonb) column", *schema, *table)
+	}
+	q := fmt.Sprintf(
+		`
+		update %s.%s
+		set state = state || jsonb_build_object('deleted_at', '%s')
+		where id = %s
+		`,
+		*schema,
+		*table,
+		time.Now().Format("2006-01-02 15:04:05"),
+		*id,
+	)
+	_, err = utilities.Postgres.Exec(q)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func retrieveColumns(schema *string, table *string) ([]Column, error) {
@@ -19,12 +98,7 @@ func retrieveColumns(schema *string, table *string) ([]Column, error) {
 	where table_schema = $1
 		and table_name = $2
 	`
-	statement, err := utilities.Postgres.Prepare(q)
-	if err != nil {
-		return nil, err
-	}
-	defer statement.Close()
-	result, err := statement.Query(schema, table)
+	result, err := utilities.Postgres.Query(q, schema, table)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +125,7 @@ func retrieve(schema *string, table *string) ([]map[string]interface{}, error) {
 		c = append(c, column.ColumnName)
 	}
 	q := fmt.Sprintf(
-		`select %s from %s.%s`,
+		`select %s from %s.%s where not (state ? 'deleted_at')`,
 		strings.Join(c, ", "),
 		*schema,
 		*table,
@@ -86,4 +160,39 @@ func retrieve(schema *string, table *string) ([]map[string]interface{}, error) {
 		results = append(results, rowData)
 	}
 	return results, nil
+}
+
+func update(schema *string, table *string, id *string, data map[string]interface{}) error {
+	columns, err := retrieveColumns(schema, table)
+	if err != nil {
+		return err
+	}
+	var s []string
+	for _, column := range columns {
+		if column.ColumnName == "state" && column.DataType == "jsonb" {
+			s = append(
+				s,
+				fmt.Sprintf(
+					`state = state || jsonb_build_object('updated_at', '%s')`,
+					time.Now().Format("2006-01-02 15:04:05"),
+				),
+			)
+			continue
+		}
+		if _, ok := data[column.ColumnName]; ok {
+			s = append(s, fmt.Sprintf("%s = '%v'", column.ColumnName, data[column.ColumnName]))
+		}
+	}
+	q := fmt.Sprintf(
+		`update %s.%s set %s where id = %s`,
+		*schema,
+		*table,
+		strings.Join(s, ", "),
+		*id,
+	)
+	_, err = utilities.Postgres.Exec(q)
+	if err != nil {
+		return err
+	}
+	return nil
 }

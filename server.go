@@ -81,6 +81,9 @@ func Serve(addr string) {
 	app.Get("/cyclone-api/db-table", table.EndpointGet)
 
 	app.Get("/cyclone-api/:schema/:table", gi.EndpointGet)
+	app.Post("/cyclone-api/:schema/:table", gi.EndpointPost)
+	app.Put("/cyclone-api/:schema/:table/:id", gi.EndpointPut)
+	app.Delete("/cyclone-api/:schema/:table/:id", gi.EndpointDelete)
 
 	app.Get("/cyclone-api/get/db-schema", schema.EndpointGet)
 
