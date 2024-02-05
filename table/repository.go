@@ -4,7 +4,7 @@ import (
 	"ovaphlow/cratecyclone/utilities"
 )
 
-func retrieveTables(schema string) ([]string, error) {
+func retrieveTables(schema *string) ([]string, error) {
 	q := `
 	select table_name
 	from information_schema.tables

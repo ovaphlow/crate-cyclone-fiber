@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"ovaphlow/cratecyclone/configurations"
+	gi "ovaphlow/cratecyclone/generic-implementation"
 	"ovaphlow/cratecyclone/schema"
 	"ovaphlow/cratecyclone/table"
 	"ovaphlow/cratecyclone/utilities"
@@ -77,7 +78,9 @@ func Serve(addr string) {
 
 	app.Get("/cyclone-api/db-schema", schema.EndpointGet)
 
-	app.Get("/cyclone-api/db-table/:schema", table.EndpointGet)
+	app.Get("/cyclone-api/db-table", table.EndpointGet)
+
+	app.Get("/cyclone-api/:schema/:table", gi.EndpointGet)
 
 	app.Get("/cyclone-api/get/db-schema", schema.EndpointGet)
 
