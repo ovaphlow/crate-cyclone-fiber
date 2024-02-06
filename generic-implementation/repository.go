@@ -170,7 +170,7 @@ func retrieve(schema *string, table *string, o *Option, f *Filter) ([]map[string
 	for _, it := range params {
 		params_ = append(params_, it)
 	}
-	utilities.Slogger.Info(q)
+	utilities.Slogger.Debug(q)
 	rows, err := utilities.Postgres.Query(q, params_...)
 	if err != nil {
 		return nil, err
