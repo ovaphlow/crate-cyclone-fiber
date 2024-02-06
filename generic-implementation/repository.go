@@ -135,7 +135,7 @@ func retrieveColumns(schema *string, table *string) ([]Column, error) {
 	return column, nil
 }
 
-func retrieve(schema *string, table *string) ([]map[string]interface{}, error) {
+func retrieve(schema *string, table *string, o *Option, f *Filter) ([]map[string]interface{}, error) {
 	columns, err := retrieveColumns(schema, table)
 	if err != nil {
 		return nil, err
@@ -150,7 +150,28 @@ func retrieve(schema *string, table *string) ([]map[string]interface{}, error) {
 		*schema,
 		*table,
 	)
-	rows, err := utilities.Postgres.Query(q)
+	var conditions []string
+	var params []string
+	if len(f.Equal) > 0 {
+		c, p := Equal(f.Equal)
+		conditions = append(conditions, c...)
+		params = append(params, p...)
+	}
+	if len(conditions) > 0 {
+		q += " and "
+		q_ := strings.Join(conditions, " and ")
+		for i := 0; i < len(params); i++ {
+			q_ = strings.Replace(q_, "?", fmt.Sprintf("$%d", i+1), 1)
+		}
+		q += q_
+	}
+	q = fmt.Sprintf("%s order by id desc limit %d offset %d", q, o.Take, o.Skip)
+	var params_ []interface{}
+	for _, it := range params {
+		params_ = append(params_, it)
+	}
+	utilities.Slogger.Info(q)
+	rows, err := utilities.Postgres.Query(q, params_...)
 	if err != nil {
 		return nil, err
 	}
