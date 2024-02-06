@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/snowflake"
+	"github.com/google/uuid"
 )
 
 type Column struct {
@@ -35,7 +36,14 @@ func create(schema *string, table *string, data map[string]interface{}) error {
 			data["time"] = time.Now().Format("2006-01-02 15:04:05")
 		}
 		if column.ColumnName == "state" && column.DataType == "jsonb" {
-			state := map[string]interface{}{"created_at": time.Now().Format("2006-01-02 15:04:05")}
+			randomUUID, err := uuid.NewRandom()
+			if err != nil {
+				return err
+			}
+			state := map[string]interface{}{
+				"created_at": time.Now().Format("2006-01-02 15:04:05"),
+				"uuid":       randomUUID,
+			}
 			stateJson, err := json.Marshal(state)
 			if err != nil {
 				return err
@@ -59,32 +67,44 @@ func create(schema *string, table *string, data map[string]interface{}) error {
 	return nil
 }
 
-func remove(schema *string, table *string, id *string) error {
+func remove(schema *string, table *string, id *string, uuid *string) error {
 	columns, err := retrieveColumns(schema, table)
 	if err != nil {
 		return err
 	}
 	var hasState bool
+	var q string
 	for _, column := range columns {
 		if column.ColumnName == "state" && column.DataType == "jsonb" {
 			hasState = true
+			q = fmt.Sprintf(
+				`
+				update %s.%s
+				set state = state || jsonb_build_object('deleted_at', '%s')
+				where id = $1 and state->>'uuid' = '%s'
+				`,
+				*schema,
+				*table,
+				time.Now().Format("2006-01-02 15:04:05"),
+				*uuid,
+			)
+		} else {
+			q = fmt.Sprintf(
+				`
+				update %s.%s
+				set state = state || jsonb_build_object('deleted_at', '%s')
+				where id = $1
+				`,
+				*schema,
+				*table,
+				time.Now().Format("2006-01-02 15:04:05"),
+			)
 		}
 	}
 	if !hasState {
 		return fmt.Errorf("table %s.%s does not have state(jsonb) column", *schema, *table)
 	}
-	q := fmt.Sprintf(
-		`
-		update %s.%s
-		set state = state || jsonb_build_object('deleted_at', '%s')
-		where id = %s
-		`,
-		*schema,
-		*table,
-		time.Now().Format("2006-01-02 15:04:05"),
-		*id,
-	)
-	_, err = utilities.Postgres.Exec(q)
+	_, err = utilities.Postgres.Exec(q, id)
 	if err != nil {
 		return err
 	}
@@ -139,10 +159,10 @@ func retrieve(schema *string, table *string) ([]map[string]interface{}, error) {
 	columnNames, _ := rows.Columns()
 	values := make([]interface{}, len(columnNames))
 	valuePtrs := make([]interface{}, len(columnNames))
+	for i := range columnNames {
+		valuePtrs[i] = &values[i]
+	}
 	for rows.Next() {
-		for i := range columnNames {
-			valuePtrs[i] = &values[i]
-		}
 		err := rows.Scan(valuePtrs...)
 		if err != nil {
 			return nil, err
@@ -162,7 +182,67 @@ func retrieve(schema *string, table *string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func update(schema *string, table *string, id *string, data map[string]interface{}) error {
+func retrieveByID(schema *string, table *string, id *string, uuid *string) (map[string]interface{}, error) {
+	columns, err := retrieveColumns(schema, table)
+	if err != nil {
+		return nil, err
+	}
+	var c []string
+	for _, column := range columns {
+		c = append(c, column.ColumnName)
+	}
+	var q string
+	for _, column := range columns {
+		if column.ColumnName == "state" && column.DataType == "jsonb" {
+			q = fmt.Sprintf(
+				`select %s from %s.%s where id = $1 and state->>'uuid' = '%s' limit 1`,
+				strings.Join(c, ", "),
+				*schema,
+				*table,
+				*uuid,
+			)
+		} else {
+			q = fmt.Sprintf(
+				`select %s from %s.%s where id = $1 limit 1`,
+				strings.Join(c, ", "),
+				*schema,
+				*table,
+			)
+		}
+	}
+	rows, err := utilities.Postgres.Query(q, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	columnNames, _ := rows.Columns()
+	values := make([]interface{}, len(columnNames))
+	valuePtrs := make([]interface{}, len(columnNames))
+	for i := range columnNames {
+		valuePtrs[i] = &values[i]
+	}
+	var result map[string]interface{}
+	for rows.Next() {
+		err := rows.Scan(valuePtrs...)
+		if err != nil {
+			return nil, err
+		}
+		rowData := make(map[string]interface{})
+		for i, col := range columnNames {
+			val := values[i]
+			b, ok := val.([]byte)
+			if ok {
+				rowData[col] = string(b)
+			} else {
+				rowData[col] = val
+			}
+		}
+		result = rowData
+	}
+	return result, nil
+}
+
+func update(schema *string, table *string, id *string, uuid *string, data map[string]interface{}) error {
 	columns, err := retrieveColumns(schema, table)
 	if err != nil {
 		return err
@@ -183,14 +263,26 @@ func update(schema *string, table *string, id *string, data map[string]interface
 			s = append(s, fmt.Sprintf("%s = '%v'", column.ColumnName, data[column.ColumnName]))
 		}
 	}
-	q := fmt.Sprintf(
-		`update %s.%s set %s where id = %s`,
-		*schema,
-		*table,
-		strings.Join(s, ", "),
-		*id,
-	)
-	_, err = utilities.Postgres.Exec(q)
+	var q string
+	for _, column := range columns {
+		if column.ColumnName == "state" && column.DataType == "jsonb" {
+			q = fmt.Sprintf(
+				`update %s.%s set %s where id = $1 and state->>'uuid' = '%s'`,
+				*schema,
+				*table,
+				strings.Join(s, ", "),
+				*uuid,
+			)
+		} else {
+			q = fmt.Sprintf(
+				`update %s.%s set %s where id = $1`,
+				*schema,
+				*table,
+				strings.Join(s, ", "),
+			)
+		}
+	}
+	_, err = utilities.Postgres.Exec(q, id)
 	if err != nil {
 		return err
 	}

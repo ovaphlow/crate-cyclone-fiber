@@ -11,7 +11,8 @@ func EndpointDelete(c *fiber.Ctx) error {
 	schema := c.Params("schema")
 	table := c.Params("table")
 	id := c.Params("id")
-	if err := remove(&schema, &table, &id); err != nil {
+	uuid := c.Params("uuid")
+	if err := remove(&schema, &table, &id, &uuid); err != nil {
 		utilities.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 	}
@@ -40,6 +41,28 @@ func EndpointGet(c *fiber.Ctx) error {
 	return c.SendString("[]")
 }
 
+func EndpointGetWithParams(c *fiber.Ctx) error {
+	schema := c.Params("schema")
+	table := c.Params("table")
+	uuid := c.Params("uuid")
+	id := c.Params("id")
+	result, err := retrieveByID(&schema, &table, &id, &uuid)
+	if err != nil {
+		utilities.Slogger.Error(err.Error())
+		return c.Status(500).JSON(fiber.Map{"message": err.Error()})
+	}
+	if result == nil {
+		return c.SendStatus(404)
+	}
+	for k, v := range result {
+		switch val := v.(type) {
+		case int64:
+			result["_"+k] = strconv.FormatInt(val, 10)
+		}
+	}
+	return c.JSON(result)
+}
+
 func EndpointPost(c *fiber.Ctx) error {
 	schema := c.Params("schema")
 	table := c.Params("table")
@@ -58,13 +81,14 @@ func EndpointPost(c *fiber.Ctx) error {
 func EndpointPut(c *fiber.Ctx) error {
 	schema := c.Params("schema")
 	table := c.Params("table")
+	uuid := c.Params("uuid")
 	id := c.Params("id")
 	var body map[string]interface{}
 	if err := c.BodyParser(&body); err != nil {
 		utilities.Slogger.Error(err.Error())
 		return c.Status(400).JSON(fiber.Map{"message": err.Error()})
 	}
-	if err := update(&schema, &table, &id, body); err != nil {
+	if err := update(&schema, &table, &id, &uuid, body); err != nil {
 		utilities.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 	}
