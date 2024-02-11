@@ -152,8 +152,43 @@ func retrieve(schema *string, table *string, o *Option, f *Filter) ([]map[string
 	)
 	var conditions []string
 	var params []string
+	if len(f.ArrayContain) > 0 {
+		c, p := ArrayContain(f.ArrayContain)
+		conditions = append(conditions, c...)
+		params = append(params, p...)
+	}
 	if len(f.Equal) > 0 {
 		c, p := Equal(f.Equal)
+		conditions = append(conditions, c...)
+		params = append(params, p...)
+	}
+	if len(f.Greater) > 0 {
+		c, p := Greater(f.Greater)
+		conditions = append(conditions, c...)
+		params = append(params, p...)
+	}
+	if len(f.In) > 0 {
+		c, p := In(f.In)
+		conditions = append(conditions, c...)
+		params = append(params, p...)
+	}
+	if len(f.Lesser) > 0 {
+		c, p := Lesser(f.Lesser)
+		conditions = append(conditions, c...)
+		params = append(params, p...)
+	}
+	if len(f.Like) > 0 {
+		c, p := Like(f.Like)
+		conditions = append(conditions, c...)
+		params = append(params, p...)
+	}
+	if len(f.ObjectContain) > 0 {
+		c, p := ObjectContain(f.ObjectContain)
+		conditions = append(conditions, c...)
+		params = append(params, p...)
+	}
+	if len(f.ObjectLike) > 0 {
+		c, p := ObjectLike(f.ObjectLike)
 		conditions = append(conditions, c...)
 		params = append(params, p...)
 	}
@@ -170,7 +205,8 @@ func retrieve(schema *string, table *string, o *Option, f *Filter) ([]map[string
 	for _, it := range params {
 		params_ = append(params_, it)
 	}
-	utilities.Slogger.Debug(q)
+	utilities.Slogger.Info(q)
+	utilities.Slogger.Info(fmt.Sprint(params_))
 	rows, err := utilities.Postgres.Query(q, params_...)
 	if err != nil {
 		return nil, err

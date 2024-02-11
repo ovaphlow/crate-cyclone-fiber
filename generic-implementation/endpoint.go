@@ -36,11 +36,33 @@ func EndpointGet(c *fiber.Ctx) error {
 		o := Option{Take: take, Skip: int64((page - 1) * take)}
 		var f Filter
 		query := c.Queries()
+		if query["array-contain"] != "" {
+			f.ArrayContain = strings.Split(query["array-contain"], ",")
+		}
 		if query["equal"] != "" {
 			f.Equal = strings.Split(query["equal"], ",")
 		}
+		if query["greater"] != "" {
+			f.Greater = strings.Split(query["greater"], ",")
+		}
+		if query["in"] != "" {
+			f.In = strings.Split(query["in"], ",")
+		}
+		if query["lesser"] != "" {
+			f.Lesser = strings.Split(query["lesser"], ",")
+		}
+		if query["like"] != "" {
+			f.Like = strings.Split(query["like"], ",")
+		}
+		if query["object-contain"] != "" {
+			f.ObjectContain = strings.Split(query["object-contain"], ",")
+		}
+		if query["object-like"] != "" {
+			f.ObjectLike = strings.Split(query["object-like"], ",")
+		}
 		result, err := retrieve(&schema, &table, &o, &f)
 		if err != nil {
+			utilities.Slogger.Error(err.Error())
 			return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 		}
 		if len(result) > 0 {

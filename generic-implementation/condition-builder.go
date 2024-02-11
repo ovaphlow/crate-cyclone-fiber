@@ -32,9 +32,8 @@ func ArrayContain(arrayContain []string) ([]string, []string) {
 	for i := 0; i < len(arrayContain); i += 2 {
 		conditions = append(
 			conditions,
-			fmt.Sprintf("json_contains(%s, json_array(?))", arrayContain[i]),
+			fmt.Sprintf("%s @> jsonb_build_array('%s')", arrayContain[i], arrayContain[i+1]),
 		)
-		params = append(params, arrayContain[i+1])
 	}
 	return conditions, params
 }
@@ -109,7 +108,7 @@ func Like(like []string) ([]string, []string) {
 	for i := 0; i < len(like); i += 2 {
 		conditions = append(
 			conditions,
-			fmt.Sprintf("position(? in %s)", like[i]),
+			fmt.Sprintf("position(? in %s) > 0", like[i]),
 		)
 		params = append(params, like[i+1])
 	}
@@ -127,12 +126,12 @@ func ObjectContain(objectContain []string) ([]string, []string) {
 		conditions = append(
 			conditions,
 			fmt.Sprintf(
-				"json_contains(%s, json_object('%s', ?))",
+				"%s @> jsonb_build_object('%s', '%s')",
 				objectContain[i],
 				objectContain[i+1],
+				objectContain[i+2],
 			),
 		)
-		params = append(params, objectContain[i+2])
 	}
 	return conditions, params
 }
@@ -148,7 +147,7 @@ func ObjectLike(objectLike []string) ([]string, []string) {
 		conditions = append(
 			conditions,
 			fmt.Sprintf(
-				"position(? in %s->>'$.%s')",
+				"position(? in %s->>'%s') > 0",
 				objectLike[i],
 				objectLike[i+1],
 			),
