@@ -6,6 +6,7 @@ import (
 	"ovaphlow/cratecyclone/configurations"
 	gi "ovaphlow/cratecyclone/generic-implementation"
 	"ovaphlow/cratecyclone/schema"
+	"ovaphlow/cratecyclone/subscriber"
 	"ovaphlow/cratecyclone/table"
 	"ovaphlow/cratecyclone/utilities"
 	"regexp"
@@ -75,6 +76,12 @@ func Serve(addr string) {
 			"message": "hola el mondo",
 		})
 	})
+
+	app.Post("/cyclone-api/subscriber/refresh-jwt", subscriber.RefreshJwt)
+	app.Post("/cyclone-api/subscriber/sign-in", subscriber.SignIn)
+	app.Post("/cyclone-api/subscriber/sign-up", subscriber.SignUp)
+	app.Post("/cyclone-api/subscriber/validate-token", subscriber.ValidateToken)
+	app.Get("/cyclone-api/subscriber/:uuid/:id", subscriber.GetWithParams)
 
 	app.Get("/cyclone-api/db-schema", schema.EndpointGet)
 
