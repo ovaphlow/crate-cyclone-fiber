@@ -135,6 +135,70 @@ func retrieveColumns(schema *string, table *string) ([]Column, error) {
 	return column, nil
 }
 
+func retrieveWithQueryBuilder(schema *string, table *string, filter *Filter, o *Option) ([]map[string]interface{}, error) {
+	columns, err := retrieveColumns(schema, table)
+	if err != nil {
+		return nil, err
+	}
+	var c []string
+	for _, column := range columns {
+		c = append(c, column.ColumnName)
+	}
+	c_ := strings.Join(c, ", ")
+	q, params := NewQueryBuilder().Select(&c_).
+		From(schema, table).
+		Equal(filter.Equal).
+		NotEqual(filter.NotEqual).
+		Greater(filter.Greater).
+		Lesser(filter.Lesser).
+		Like(filter.Like).
+		In(filter.In).
+		NotIn(filter.NotIn).
+		ObjectContain(filter.ObjectContain).
+		ArrayContain(filter.ArrayContain).
+		ObjectLike(filter.ObjectLike).
+		OrderBy(o.Order).
+		Take(o.Take).
+		Skip(o.Skip).
+		Build()
+	utilities.Slogger.Info(q)
+	var params_ []interface{}
+	for _, it := range params {
+		params_ = append(params_, it)
+	}
+	utilities.Slogger.Info(fmt.Sprint(params_))
+	rows, err := utilities.Postgres.Query(q, params_...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var results []map[string]interface{}
+	columnNames, _ := rows.Columns()
+	values := make([]interface{}, len(columnNames))
+	valuePtrs := make([]interface{}, len(columnNames))
+	for i := range columnNames {
+		valuePtrs[i] = &values[i]
+	}
+	for rows.Next() {
+		err := rows.Scan(valuePtrs...)
+		if err != nil {
+			return nil, err
+		}
+		rowData := make(map[string]interface{})
+		for i, col := range columnNames {
+			val := values[i]
+			b, ok := val.([]byte)
+			if ok {
+				rowData[col] = string(b)
+			} else {
+				rowData[col] = val
+			}
+		}
+		results = append(results, rowData)
+	}
+	return results, nil
+}
+
 func retrieve(schema *string, table *string, o *Option, f *Filter) ([]map[string]interface{}, error) {
 	columns, err := retrieveColumns(schema, table)
 	if err != nil {

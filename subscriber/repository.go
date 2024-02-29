@@ -2,12 +2,14 @@ package subscriber
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"ovaphlow/cratecyclone/utilities"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/snowflake"
+	"github.com/google/uuid"
 )
 
 /*
@@ -26,24 +28,32 @@ CREATE INDEX subscriber_name_idx ON crate.subscriber USING btree (name);
 CREATE INDEX subscriber_phone_idx ON crate.subscriber USING btree (phone);
 */
 
-var subscriberColumns = []string{"id", "email", "name", "phone", "tags", "detail", "time"}
+var subscriberColumns = []string{"id", "email", "name", "phone", "tags", "detail", "time", "state"}
 
 func repoCreateSubscriber(subscriber *Subscriber) error {
 	q := fmt.Sprintf(
-		"insert into crate.subscriber (%s) values ($1, $2, $3, $4, $5, $6, $7)",
+		"insert into crate.subscriber (%s) values ($1, $2, $3, $4, $5, $6, $7, $8)",
 		strings.Join(subscriberColumns, ", "),
 	)
-	statement, err := utilities.Postgres.Prepare(q)
-	if err != nil {
-		return err
-	}
 	node, err := snowflake.NewNode(1)
 	if err != nil {
 		utilities.Slogger.Error(err.Error())
 		return err
 	}
-	defer statement.Close()
-	_, err = statement.Exec(
+	randomUUID, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+	state := map[string]interface{}{
+		"uuid":       randomUUID,
+		"created_at": time.Now().Format("2006-01-02 15:04:05"),
+	}
+	stateJson, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+	_, err = utilities.Postgres.Exec(
+		q,
 		node.Generate(),
 		subscriber.Email,
 		subscriber.Name,
@@ -51,6 +61,7 @@ func repoCreateSubscriber(subscriber *Subscriber) error {
 		subscriber.Tags,
 		subscriber.Detail,
 		time.Now().Format("2006-01-02 15:04:05"),
+		stateJson,
 	)
 	if err != nil {
 		return err
@@ -112,6 +123,7 @@ func repoRetrieveSubscriberByUsername(username string) (*Subscriber, error) {
 			&subscriber.Tags,
 			&subscriber.Detail,
 			&subscriber.Time,
+			&subscriber.State,
 		)
 		if err != nil {
 			return nil, err

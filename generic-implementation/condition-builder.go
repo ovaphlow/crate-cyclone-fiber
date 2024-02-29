@@ -7,18 +7,21 @@ import (
 )
 
 type Option struct {
-	Take int
-	Skip int64
+	Take  int
+	Skip  int64
+	Order *string
 }
 
 type Filter struct {
-	ArrayContain  []string
 	Equal         []string
-	Greater       []string
-	In            []string
-	Lesser        []string
+	NotEqual      []string
 	Like          []string
+	Greater       []string
+	Lesser        []string
+	In            []string
+	NotIn         []string
 	ObjectContain []string
+	ArrayContain  []string
 	ObjectLike    []string
 }
 

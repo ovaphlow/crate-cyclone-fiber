@@ -8,4 +8,5 @@ type Subscriber struct {
 	Tags   string
 	Detail string
 	Time   string
+	State  string
 }
