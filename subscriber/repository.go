@@ -73,10 +73,11 @@ func repoRetrieveSubscriberById(id int64, uuid string) (*Subscriber, error) {
 	q := fmt.Sprintf(
 		`
 		select %s from crate.subscriber
-		where id = $1 and json_contains(detail, json_object('uuid', $2))
+		where id = $1 and state @> jsonb_build_object('uuid', '%s')
 		limit 1
 		`,
 		strings.Join(subscriberColumns, ", "),
+		uuid,
 	)
 	statement, err := utilities.Postgres.Prepare(q)
 	if err != nil {
@@ -84,7 +85,7 @@ func repoRetrieveSubscriberById(id int64, uuid string) (*Subscriber, error) {
 	}
 	defer statement.Close()
 	subscriber := &Subscriber{}
-	err = statement.QueryRow(id, uuid).Scan(
+	err = statement.QueryRow(id).Scan(
 		&subscriber.Id,
 		&subscriber.Email,
 		&subscriber.Name,
@@ -92,6 +93,7 @@ func repoRetrieveSubscriberById(id int64, uuid string) (*Subscriber, error) {
 		&subscriber.Tags,
 		&subscriber.Detail,
 		&subscriber.Time,
+		&subscriber.State,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {

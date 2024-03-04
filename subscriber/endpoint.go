@@ -142,10 +142,16 @@ func SignIn(c *fiber.Ctx) error {
 	if sha != detail["sha"] {
 		return c.Status(401).JSON(fiber.Map{"message": "用户名或密码错误"})
 	}
+	var state map[string]interface{}
+	if err := json.Unmarshal([]byte(subscriber.State), &state); err != nil {
+		utilities.Slogger.Error(err.Error())
+		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
+	}
 	claims := &jwt.StandardClaims{
 		ExpiresAt: time.Now().Add(time.Hour * 24 * 7).Unix(),
 		Issuer:    "crate",
 		Subject:   strconv.FormatInt(subscriber.Id, 10),
+		Id:        state["uuid"].(string),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
@@ -205,7 +211,6 @@ func SignUp(c *fiber.Ctx) error {
 }
 
 func ValidateToken(c *fiber.Ctx) error {
-	c.Set(configurations.HeaderAPIVersion, "2024-01-06")
 	type Body struct {
 		Token string `json:"token"`
 	}
@@ -239,5 +244,22 @@ func ValidateToken(c *fiber.Ctx) error {
 	if int64(claims["exp"].(float64)) < time.Now().Unix() {
 		return c.Status(401).JSON(fiber.Map{"message": "token 已过期"})
 	}
+	userId, err := strconv.ParseInt(claims["sub"].(string), 10, 64)
+	if err != nil {
+		utilities.Slogger.Error(err.Error())
+		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
+	}
+	result, err := repoRetrieveSubscriberById(userId, claims["jti"].(string))
+	if err != nil {
+		utilities.Slogger.Error(err.Error())
+		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
+	}
+	if result == nil {
+		return c.Status(401).JSON(fiber.Map{"message": "用户不存在"})
+	}
+	claims["email"] = result.Email
+	claims["name"] = result.Name
+	claims["phone"] = result.Phone
+	claims["tags"] = result.Tags
 	return c.JSON(claims)
 }
