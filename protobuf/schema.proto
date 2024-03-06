@@ -1,0 +1,17 @@
+// protoc --go_out=./schema --go-grpc_out=./schema .\protobuf\schema.proto
+// protoc --go_out=plugins=grpc:./schema ./protobuf/schema.proto
+syntax = "proto3";
+
+package schema;
+
+option go_package = ".;schema";
+
+service Schema {
+  rpc RetrieveSchema (Empty) returns (RetrieveSchemaReply) {}
+}
+
+message Empty {}
+
+message RetrieveSchemaReply {
+  repeated string name = 1;
+}

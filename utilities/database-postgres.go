@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -19,14 +20,14 @@ func InitPostgres() {
 		Slogger.Error("加载环境变量失败")
 		log.Fatal(err.Error())
 	}
-	username := os.Getenv("POSTGRES_USERNAME")
+	user := os.Getenv("POSTGRES_USER")
 	password := os.Getenv("POSTGRES_PASSWORD")
 	host := os.Getenv("POSTGRES_HOST")
 	port := os.Getenv("POSTGRES_PORT")
 	database := os.Getenv("POSTGRES_DATABASE")
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		username,
+		user,
 		password,
 		host,
 		port,
@@ -38,7 +39,7 @@ func InitPostgres() {
 		log.Fatal(err.Error())
 	}
 	Postgres.SetConnMaxLifetime(time.Second * 30)
-	Postgres.SetMaxIdleConns(2)
+	Postgres.SetMaxIdleConns(runtime.NumCPU()*2 + 1)
 	if err = Postgres.Ping(); err != nil {
 		Slogger.Error("连接数据库失败")
 		log.Fatal(err.Error())

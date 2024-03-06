@@ -21,11 +21,12 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func Serve(addr string) {
+func HTTPServe(addr string) {
 	utilities.InitPostgres()
 
 	app := fiber.New(fiber.Config{
-		Prefork:   true,
+		// Prefork 模式与 gRPC 服务冲突
+		// Prefork:   true,
 		BodyLimit: 16 * 1024 * 1024,
 	})
 
