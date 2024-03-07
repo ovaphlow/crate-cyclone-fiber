@@ -3,7 +3,7 @@ package schema
 import (
 	"encoding/json"
 	"fmt"
-	"ovaphlow/cratecyclone/utilities"
+	"ovaphlow/cratecyclone/utility"
 	"strings"
 	"time"
 
@@ -13,7 +13,7 @@ import (
 
 func retrieveSchemas() ([]string, error) {
 	q := "select schema_name from information_schema.schemata"
-	statement, err := utilities.Postgres.Prepare(q)
+	statement, err := utility.Postgres.Prepare(q)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func retrieveTables(schema *string) ([]string, error) {
 	from information_schema.tables
 	where table_schema = $1;
 	`
-	statement, err := utilities.Postgres.Prepare(q)
+	statement, err := utility.Postgres.Prepare(q)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func retrieveColumns(schema *string, table *string) ([]Column, error) {
 	where table_schema = $1
 		and table_name = $2
 	`
-	result, err := utilities.Postgres.Query(q, schema, table)
+	result, err := utility.Postgres.Query(q, schema, table)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func create(schema *string, table *string, data map[string]interface{}) error {
 		strings.Join(c, ", "),
 		strings.Join(v, ", "),
 	)
-	_, err = utilities.Postgres.Exec(q)
+	_, err = utility.Postgres.Exec(q)
 	if err != nil {
 		return err
 	}
@@ -156,13 +156,13 @@ func retrieve(schema *string, table *string, filter *QueryFilter, o *QueryOption
 		Take(o.Take).
 		Skip(o.Skip).
 		Build()
-	utilities.Slogger.Info(q)
+	utility.Slogger.Info(q)
 	var params_ []interface{}
 	for _, it := range params {
 		params_ = append(params_, it)
 	}
-	utilities.Slogger.Info(fmt.Sprint(params_))
-	rows, err := utilities.Postgres.Query(q, params_...)
+	utility.Slogger.Info(fmt.Sprint(params_))
+	rows, err := utility.Postgres.Query(q, params_...)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func retrieveByID(schema *string, table *string, id *string, uuid *string) (map[
 			)
 		}
 	}
-	rows, err := utilities.Postgres.Query(q, id)
+	rows, err := utility.Postgres.Query(q, id)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func update(schema *string, table *string, id *string, uuid *string, data map[st
 		strings.Join(s, ", "),
 		*uuid,
 	)
-	_, err = utilities.Postgres.Exec(q, id)
+	_, err = utility.Postgres.Exec(q, id)
 	if err != nil {
 		return err
 	}
@@ -298,7 +298,7 @@ func remove(schema *string, table *string, id *string, uuid *string) error {
 		time.Now().Format("2006-01-02 15:04:05"),
 		*uuid,
 	)
-	_, err := utilities.Postgres.Exec(q, id)
+	_, err := utility.Postgres.Exec(q, id)
 	if err != nil {
 		return err
 	}

@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"ovaphlow/cratecyclone/configurations"
-	"ovaphlow/cratecyclone/utilities"
+	"ovaphlow/cratecyclone/configuration"
+	"ovaphlow/cratecyclone/utility"
 	"strconv"
 	"strings"
 	"time"
@@ -22,7 +22,7 @@ import (
 )
 
 func GetWithParams(c *fiber.Ctx) error {
-	c.Set(configurations.HeaderAPIVersion, "2024-01-06")
+	c.Set(configuration.HeaderAPIVersion, "2024-01-06")
 	id := c.Params("id", "")
 	uuid := c.Params("uuid", "")
 	if id == "" || uuid == "" {
@@ -30,12 +30,12 @@ func GetWithParams(c *fiber.Ctx) error {
 	}
 	id_, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(400).JSON(fiber.Map{"message": "参数错误"})
 	}
 	subscriber, err := repoRetrieveSubscriberById(id_, uuid)
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	if subscriber == nil {
@@ -54,13 +54,13 @@ func GetWithParams(c *fiber.Ctx) error {
 }
 
 func RefreshJwt(c *fiber.Ctx) error {
-	c.Set(configurations.HeaderAPIVersion, "2024-01-06")
+	c.Set(configuration.HeaderAPIVersion, "2024-01-06")
 	type Body struct {
 		Token string `json:"token"`
 	}
 	var body Body
 	if err := c.BodyParser(&body); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(400).JSON(fiber.Map{"message": "参数错误"})
 	}
 	if body.Token == "" {
@@ -70,7 +70,7 @@ func RefreshJwt(c *fiber.Ctx) error {
 		return []byte(strings.ReplaceAll(os.Getenv("JWT_KEY"), " ", "")), nil
 	})
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(401).JSON(fiber.Map{"message": "用户凭证异常"})
 	}
 	if !token.Valid {
@@ -78,11 +78,11 @@ func RefreshJwt(c *fiber.Ctx) error {
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		utilities.Slogger.Error("token claims is not jwt.MapClaims")
+		utility.Slogger.Error("token claims is not jwt.MapClaims")
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	if claims["exp"] == nil {
-		utilities.Slogger.Error("token claims exp is nil")
+		utility.Slogger.Error("token claims exp is nil")
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	if int64(claims["exp"].(float64)) < time.Now().Unix() {
@@ -92,14 +92,14 @@ func RefreshJwt(c *fiber.Ctx) error {
 	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(strings.ReplaceAll(os.Getenv("JWT_KEY"), " ", "")))
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	return c.JSON(fiber.Map{"token": tokenString})
 }
 
 func SignIn(c *fiber.Ctx) error {
-	c.Set(configurations.HeaderAPIVersion, "2024-01-06")
+	c.Set(configuration.HeaderAPIVersion, "2024-01-06")
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("加载环境变量失败")
@@ -111,7 +111,7 @@ func SignIn(c *fiber.Ctx) error {
 	}
 	var body SignInBody
 	if err := c.BodyParser(&body); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(400).JSON(fiber.Map{"message": "参数错误"})
 	}
 	if body.Username == "" || body.Password == "" {
@@ -119,7 +119,7 @@ func SignIn(c *fiber.Ctx) error {
 	}
 	subscriber, err := repoRetrieveSubscriberByUsername(body.Username)
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	if subscriber == nil {
@@ -127,12 +127,12 @@ func SignIn(c *fiber.Ctx) error {
 	}
 	var detail map[string]interface{}
 	if err := json.Unmarshal([]byte(subscriber.Detail), &detail); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	salt, ok := detail["salt"].(string)
 	if !ok {
-		utilities.Slogger.Error("salt is not string")
+		utility.Slogger.Error("salt is not string")
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	key := []byte(salt)
@@ -144,7 +144,7 @@ func SignIn(c *fiber.Ctx) error {
 	}
 	var state map[string]interface{}
 	if err := json.Unmarshal([]byte(subscriber.State), &state); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	claims := &jwt.StandardClaims{
@@ -156,14 +156,14 @@ func SignIn(c *fiber.Ctx) error {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	return c.JSON(fiber.Map{"token": tokenString})
 }
 
 func SignUp(c *fiber.Ctx) error {
-	c.Set(configurations.HeaderAPIVersion, "2024-01-06")
+	c.Set(configuration.HeaderAPIVersion, "2024-01-06")
 	type SignUpBody struct {
 		Email    string `json:"email"`
 		Name     string `json:"name"`
@@ -172,7 +172,7 @@ func SignUp(c *fiber.Ctx) error {
 	}
 	var body SignUpBody
 	if err := c.BodyParser(&body); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(400).JSON(fiber.Map{"message": "参数错误"})
 	}
 	if (body.Email == "" && body.Name == "" && body.Phone == "") || body.Password == "" {
@@ -180,7 +180,7 @@ func SignUp(c *fiber.Ctx) error {
 	}
 	subscriber, err := repoRetrieveSubscriberByUsername(body.Email)
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	if subscriber != nil {
@@ -195,7 +195,7 @@ func SignUp(c *fiber.Ctx) error {
 	bytes := make([]byte, 8)
 	_, err = rand.Read(bytes)
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	key := []byte(hex.EncodeToString(bytes))
@@ -204,7 +204,7 @@ func SignUp(c *fiber.Ctx) error {
 	sha := hex.EncodeToString(r.Sum(nil))
 	subscriber.Detail = fmt.Sprintf(`{"salt": "%s", "sha": "%s", "uuid": "%s"}`, key, sha, uuid.New())
 	if err := repoCreateSubscriber(subscriber); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	return c.JSON(fiber.Map{"message": "注册成功"})
@@ -216,7 +216,7 @@ func ValidateToken(c *fiber.Ctx) error {
 	}
 	var body Body
 	if err := c.BodyParser(&body); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(400).JSON(fiber.Map{"message": "参数错误"})
 	}
 	if body.Token == "" {
@@ -226,7 +226,7 @@ func ValidateToken(c *fiber.Ctx) error {
 		return []byte(strings.ReplaceAll(os.Getenv("JWT_KEY"), " ", "")), nil
 	})
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(401).JSON(fiber.Map{"message": "用户凭证异常"})
 	}
 	if !token.Valid {
@@ -234,11 +234,11 @@ func ValidateToken(c *fiber.Ctx) error {
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		utilities.Slogger.Error("token claims is not jwt.MapClaims")
+		utility.Slogger.Error("token claims is not jwt.MapClaims")
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	if claims["exp"] == nil {
-		utilities.Slogger.Error("token claims exp is nil")
+		utility.Slogger.Error("token claims exp is nil")
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	if int64(claims["exp"].(float64)) < time.Now().Unix() {
@@ -246,12 +246,12 @@ func ValidateToken(c *fiber.Ctx) error {
 	}
 	userId, err := strconv.ParseInt(claims["sub"].(string), 10, 64)
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	result, err := repoRetrieveSubscriberById(userId, claims["jti"].(string))
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	if result == nil {

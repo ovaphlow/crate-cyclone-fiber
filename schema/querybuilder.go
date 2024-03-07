@@ -2,7 +2,7 @@ package schema
 
 import (
 	"fmt"
-	"ovaphlow/cratecyclone/utilities"
+	"ovaphlow/cratecyclone/utility"
 	"strings"
 )
 
@@ -34,7 +34,7 @@ func (qb *QueryBuilder) From(schema *string, table *string) *QueryBuilder {
 
 func (qb *QueryBuilder) Equal(equal []string) *QueryBuilder {
 	if len(equal)%2 != 0 {
-		utilities.Slogger.Warn("equal 参数错误")
+		utility.Slogger.Warn("equal 参数错误")
 		return qb
 	}
 	for i := 0; i < len(equal); i += 2 {
@@ -46,7 +46,7 @@ func (qb *QueryBuilder) Equal(equal []string) *QueryBuilder {
 
 func (qb *QueryBuilder) NotEqual(notEqual []string) *QueryBuilder {
 	if len(notEqual)%2 != 0 {
-		utilities.Slogger.Warn("notEqual 参数错误")
+		utility.Slogger.Warn("notEqual 参数错误")
 		return qb
 	}
 	for i := 0; i < len(notEqual); i += 2 {
@@ -58,7 +58,7 @@ func (qb *QueryBuilder) NotEqual(notEqual []string) *QueryBuilder {
 
 func (qb *QueryBuilder) Like(like []string) *QueryBuilder {
 	if len(like)%2 != 0 {
-		utilities.Slogger.Warn("like 参数错误")
+		utility.Slogger.Warn("like 参数错误")
 		return qb
 	}
 	for i := 0; i < len(like); i += 2 {
@@ -73,7 +73,7 @@ func (qb *QueryBuilder) Like(like []string) *QueryBuilder {
 
 func (qb *QueryBuilder) Greater(greater []string) *QueryBuilder {
 	if len(greater)%2 != 0 {
-		utilities.Slogger.Warn("greater 参数错误")
+		utility.Slogger.Warn("greater 参数错误")
 		return qb
 	}
 	for i := 0; i < len(greater); i += 2 {
@@ -85,7 +85,7 @@ func (qb *QueryBuilder) Greater(greater []string) *QueryBuilder {
 
 func (qb *QueryBuilder) Lesser(lesser []string) *QueryBuilder {
 	if len(lesser)%2 != 0 {
-		utilities.Slogger.Warn("lesser 参数错误")
+		utility.Slogger.Warn("lesser 参数错误")
 		return qb
 	}
 	for i := 0; i < len(lesser); i += 2 {
@@ -100,7 +100,7 @@ func (qb *QueryBuilder) In(in []string) *QueryBuilder {
 		return qb
 	}
 	if len(in) < 2 {
-		utilities.Slogger.Warn("in 参数错误")
+		utility.Slogger.Warn("in 参数错误")
 		return qb
 	}
 	c := make([]string, len(in)-1)
@@ -120,7 +120,7 @@ func (qb *QueryBuilder) NotIn(notIn []string) *QueryBuilder {
 		return qb
 	}
 	if len(notIn) < 2 {
-		utilities.Slogger.Warn("notIn 参数错误")
+		utility.Slogger.Warn("notIn 参数错误")
 		return qb
 	}
 	c := make([]string, len(notIn)-1)
@@ -137,7 +137,7 @@ func (qb *QueryBuilder) NotIn(notIn []string) *QueryBuilder {
 
 func (qb *QueryBuilder) ObjectContain(objectContain []string) *QueryBuilder {
 	if len(objectContain)%3 != 0 {
-		utilities.Slogger.Warn("objectContain 参数错误")
+		utility.Slogger.Warn("objectContain 参数错误")
 		return qb
 	}
 	for i := 0; i < len(objectContain); i += 3 {
@@ -156,7 +156,7 @@ func (qb *QueryBuilder) ObjectContain(objectContain []string) *QueryBuilder {
 
 func (qb *QueryBuilder) ArrayContain(arrayContain []string) *QueryBuilder {
 	if len(arrayContain)%2 != 0 {
-		utilities.Slogger.Warn("arrayContain 参数错误")
+		utility.Slogger.Warn("arrayContain 参数错误")
 		return qb
 	}
 	for i := 0; i < len(arrayContain); i += 2 {
@@ -170,7 +170,7 @@ func (qb *QueryBuilder) ArrayContain(arrayContain []string) *QueryBuilder {
 
 func (qb *QueryBuilder) ObjectLike(objectLike []string) *QueryBuilder {
 	if len(objectLike)%3 != 0 {
-		utilities.Slogger.Warn("objectLike 参数错误")
+		utility.Slogger.Warn("objectLike 参数错误")
 		return qb
 	}
 	for i := 0; i < len(objectLike); i += 3 {

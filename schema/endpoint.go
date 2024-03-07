@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"ovaphlow/cratecyclone/utilities"
+	"ovaphlow/cratecyclone/utility"
 	"strconv"
 	"strings"
 
@@ -11,7 +11,7 @@ import (
 func GetSchema(c *fiber.Ctx) error {
 	schemas, err := retrieveSchemas()
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 	}
 	if len(schemas) > 0 {
@@ -40,11 +40,11 @@ func Post(c *fiber.Ctx) error {
 	table := c.Params("table")
 	var body map[string]interface{}
 	if err := c.BodyParser(&body); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(400).JSON(fiber.Map{"message": err.Error()})
 	}
 	if err := create(&schema, &table, body); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 	}
 	return c.SendStatus(201)
@@ -99,7 +99,7 @@ func Get(c *fiber.Ctx) error {
 		}
 		result, err := retrieve(&schema, &table, &f, &o)
 		if err != nil {
-			utilities.Slogger.Error(err.Error())
+			utility.Slogger.Error(err.Error())
 			return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 		}
 		if len(result) > 0 {
@@ -126,7 +126,7 @@ func GetWithParams(c *fiber.Ctx) error {
 	id := c.Params("id")
 	result, err := retrieveByID(&schema, &table, &id, &uuid)
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 	}
 	if result == nil {
@@ -148,11 +148,11 @@ func Put(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var body map[string]interface{}
 	if err := c.BodyParser(&body); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(400).JSON(fiber.Map{"message": err.Error()})
 	}
 	if err := update(&schema, &table, &id, &uuid, body); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 	}
 	return c.SendStatus(204)
@@ -164,7 +164,7 @@ func Delete(c *fiber.Ctx) error {
 	uuid := c.Params("uuid")
 	id := c.Params("id")
 	if err := remove(&schema, &table, &id, &uuid); err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 	}
 	return c.SendStatus(204)

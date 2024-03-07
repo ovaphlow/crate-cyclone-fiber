@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 	pb_schema "ovaphlow/cratecyclone/schema"
-	"ovaphlow/cratecyclone/utilities"
+	"ovaphlow/cratecyclone/utility"
 
 	"google.golang.org/grpc"
 )
@@ -30,5 +30,5 @@ func GRPCServe(addr string) {
 	s := grpc.NewServer()
 	pb_schema.RegisterSchemaServer(s, &server{})
 	go s.Serve(lis)
-	utilities.Slogger.Info("GRPC 服务运行于端口 50051")
+	utility.Slogger.Info("GRPC 服务运行于端口 50051")
 }

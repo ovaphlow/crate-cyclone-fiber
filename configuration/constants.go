@@ -1,4 +1,4 @@
-package configurations
+package configuration
 
 var PublicUris = []string{
 	"/cyclone-api",

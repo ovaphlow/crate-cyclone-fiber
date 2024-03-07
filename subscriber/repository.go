@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"ovaphlow/cratecyclone/utilities"
+	"ovaphlow/cratecyclone/utility"
 	"strings"
 	"time"
 
@@ -37,7 +37,7 @@ func repoCreateSubscriber(subscriber *Subscriber) error {
 	)
 	node, err := snowflake.NewNode(1)
 	if err != nil {
-		utilities.Slogger.Error(err.Error())
+		utility.Slogger.Error(err.Error())
 		return err
 	}
 	randomUUID, err := uuid.NewRandom()
@@ -52,7 +52,7 @@ func repoCreateSubscriber(subscriber *Subscriber) error {
 	if err != nil {
 		return err
 	}
-	_, err = utilities.Postgres.Exec(
+	_, err = utility.Postgres.Exec(
 		q,
 		node.Generate(),
 		subscriber.Email,
@@ -79,7 +79,7 @@ func repoRetrieveSubscriberById(id int64, uuid string) (*Subscriber, error) {
 		strings.Join(subscriberColumns, ", "),
 		uuid,
 	)
-	statement, err := utilities.Postgres.Prepare(q)
+	statement, err := utility.Postgres.Prepare(q)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func repoRetrieveSubscriberByUsername(username string) (*Subscriber, error) {
 		"select %s from crate.subscriber where email = $1 or name = $2 or phone = $3",
 		strings.Join(subscriberColumns, ", "),
 	)
-	result, err := utilities.Postgres.Query(q, username, username, username)
+	result, err := utility.Postgres.Query(q, username, username, username)
 	if err != nil {
 		return nil, err
 	}

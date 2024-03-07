@@ -3,10 +3,10 @@ package main
 import (
 	"log"
 	"os"
-	"ovaphlow/cratecyclone/configurations"
+	"ovaphlow/cratecyclone/configuration"
 	"ovaphlow/cratecyclone/schema"
 	"ovaphlow/cratecyclone/subscriber"
-	"ovaphlow/cratecyclone/utilities"
+	"ovaphlow/cratecyclone/utility"
 	"regexp"
 	"strings"
 
@@ -20,7 +20,7 @@ import (
 )
 
 func HTTPServe(addr string) {
-	utilities.InitPostgres()
+	utility.InitPostgres()
 
 	app := fiber.New(fiber.Config{
 		// Prefork 模式与 gRPC 服务冲突
@@ -37,19 +37,19 @@ func HTTPServe(addr string) {
 	app.Use(helmet.New())
 
 	app.Use(func(c *fiber.Ctx) error {
-		utilities.Slogger.Info(c.Path(), "method", c.Method(), "query", c.Queries(), "ip", c.IP())
+		utility.Slogger.Info(c.Path(), "method", c.Method(), "query", c.Queries(), "ip", c.IP())
 		return c.Next()
 	})
 
 	app.Use(recover.New())
 
 	app.Use(func(c *fiber.Ctx) error {
-		c.Set(configurations.HeaderAPIVersion, "2024-02-03")
+		c.Set(configuration.HeaderAPIVersion, "2024-02-03")
 		return c.Next()
 	})
 
 	app.Use(func(c *fiber.Ctx) error {
-		for _, item := range configurations.PublicUris {
+		for _, item := range configuration.PublicUris {
 			match, _ := regexp.MatchString(item, c.Path())
 			if match {
 				return c.Next()
@@ -61,7 +61,7 @@ func HTTPServe(addr string) {
 			return []byte(strings.ReplaceAll(os.Getenv("JWT_KEY"), " ", "")), nil
 		})
 		if err != nil {
-			utilities.Slogger.Error(err.Error())
+			utility.Slogger.Error(err.Error())
 			return c.Status(401).JSON(fiber.Map{"message": "用户凭证异常"})
 		}
 		if !token.Valid {
