@@ -1,4 +1,4 @@
-package genericimplementation
+package schema
 
 import (
 	"fmt"

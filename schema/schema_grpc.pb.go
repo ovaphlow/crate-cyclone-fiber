@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SchemaClient interface {
 	RetrieveSchema(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*RetrieveSchemaReply, error)
+	RetrieveTable(ctx context.Context, in *RetrieveTableRequest, opts ...grpc.CallOption) (*RetrieveTableReply, error)
 }
 
 type schemaClient struct {
@@ -42,11 +43,21 @@ func (c *schemaClient) RetrieveSchema(ctx context.Context, in *Empty, opts ...gr
 	return out, nil
 }
 
+func (c *schemaClient) RetrieveTable(ctx context.Context, in *RetrieveTableRequest, opts ...grpc.CallOption) (*RetrieveTableReply, error) {
+	out := new(RetrieveTableReply)
+	err := c.cc.Invoke(ctx, "/schema.Schema/RetrieveTable", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SchemaServer is the server API for Schema service.
 // All implementations must embed UnimplementedSchemaServer
 // for forward compatibility
 type SchemaServer interface {
 	RetrieveSchema(context.Context, *Empty) (*RetrieveSchemaReply, error)
+	RetrieveTable(context.Context, *RetrieveTableRequest) (*RetrieveTableReply, error)
 	mustEmbedUnimplementedSchemaServer()
 }
 
@@ -56,6 +67,9 @@ type UnimplementedSchemaServer struct {
 
 func (UnimplementedSchemaServer) RetrieveSchema(context.Context, *Empty) (*RetrieveSchemaReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RetrieveSchema not implemented")
+}
+func (UnimplementedSchemaServer) RetrieveTable(context.Context, *RetrieveTableRequest) (*RetrieveTableReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RetrieveTable not implemented")
 }
 func (UnimplementedSchemaServer) mustEmbedUnimplementedSchemaServer() {}
 
@@ -88,6 +102,24 @@ func _Schema_RetrieveSchema_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Schema_RetrieveTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetrieveTableRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SchemaServer).RetrieveTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/schema.Schema/RetrieveTable",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SchemaServer).RetrieveTable(ctx, req.(*RetrieveTableRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Schema_ServiceDesc is the grpc.ServiceDesc for Schema service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +130,10 @@ var Schema_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RetrieveSchema",
 			Handler:    _Schema_RetrieveSchema_Handler,
+		},
+		{
+			MethodName: "RetrieveTable",
+			Handler:    _Schema_RetrieveTable_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

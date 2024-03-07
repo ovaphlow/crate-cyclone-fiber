@@ -8,7 +8,7 @@ state jsonb NOT NULL
 ...
 ```
 
-## API
+## HTTP API
 
 ```text
 GET /cyclone-api/db-schema
@@ -36,4 +36,12 @@ PUT /cyclone-api/:schema/:table/:uuid/:id
 
 ```text
 DELETE /cyclone-api/:schema/:table/:uuid/:id
+```
+
+## gRPC
+
+protoc
+
+```shell
+protoc --go_out=./schema --go-grpc_out=./schema ./protobuf/schema.proto
 ```

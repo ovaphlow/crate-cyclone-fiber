@@ -1,5 +1,4 @@
 // protoc --go_out=./schema --go-grpc_out=./schema .\protobuf\schema.proto
-// protoc --go_out=plugins=grpc:./schema ./protobuf/schema.proto
 syntax = "proto3";
 
 package schema;
@@ -8,10 +7,59 @@ option go_package = ".;schema";
 
 service Schema {
   rpc RetrieveSchema (Empty) returns (RetrieveSchemaReply) {}
+  rpc RetrieveTable (RetrieveTableRequest) returns (RetrieveTableReply) {}
+
+  rpc Create (CreateRequest) returns (CreateReply) {}
+  rpc Retrieve () returns (Rows) {}
+  rpc RetrieveByParams (Params) returns (Row) {}
+  rpc Update (UpdateRequest) returns (Empty) {}
+  rpc Remove (Params) returns (Empty) {}
 }
 
 message Empty {}
 
 message RetrieveSchemaReply {
-  repeated string name = 1;
+  repeated string schema = 1;
+}
+
+message RetrieveTableRequest {
+  string schema = 1;
+}
+
+message RetrieveTableReply {
+  repeated string table = 1;
+}
+
+message CreateRequest {
+  string schema = 1;
+  string table = 2;
+  string data = 3;
+}
+
+message CreateReply {
+  int64 id = 1;
+  string uuid = 2;
+}
+
+message Params {
+  string schema = 1;
+  string table = 2;
+  int64 id = 3;
+  string uuid = 4;
+}
+
+message UpdateRequest {
+  string schema = 1;
+  string table = 2;
+  int64 id = 3;
+  string uuid = 4;
+  string data = 5;
+}
+
+message Row {
+  string data = 1;
+}
+
+message Rows {
+  repeated Row data = 1;
 }

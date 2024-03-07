@@ -4,10 +4,8 @@ import (
 	"log"
 	"os"
 	"ovaphlow/cratecyclone/configurations"
-	gi "ovaphlow/cratecyclone/generic-implementation"
 	"ovaphlow/cratecyclone/schema"
 	"ovaphlow/cratecyclone/subscriber"
-	"ovaphlow/cratecyclone/table"
 	"ovaphlow/cratecyclone/utilities"
 	"regexp"
 	"strings"
@@ -84,19 +82,16 @@ func HTTPServe(addr string) {
 	app.Post("/cyclone-api/subscriber/validate-token", subscriber.ValidateToken)
 	app.Get("/cyclone-api/subscriber/:uuid/:id", subscriber.GetWithParams)
 
-	app.Get("/cyclone-api/db-schema", schema.EndpointGet)
+	app.Get("/cyclone-api/db-schema", schema.GetSchema)
+	app.Get("/cyclone-api/:schema/db-table", schema.GetTable)
+	app.Get("/cyclone-api/:schema/:table", schema.Get)
+	app.Get("/cyclone-api/:schema/:table/:uuid/:id", schema.GetWithParams)
+	app.Post("/cyclone-api/:schema/:table", schema.Post)
+	app.Put("/cyclone-api/:schema/:table/:uuid/:id", schema.Put)
+	app.Delete("/cyclone-api/:schema/:table/:uuid/:id", schema.Delete)
 
-	app.Get("/cyclone-api/db-table", table.EndpointGet)
-
-	app.Get("/cyclone-api/:schema/:table", gi.EndpointGet)
-	app.Get("/cyclone-api/:schema/:table/:uuid/:id", gi.EndpointGetWithParams)
-	app.Post("/cyclone-api/:schema/:table", gi.EndpointPost)
-	app.Put("/cyclone-api/:schema/:table/:uuid/:id", gi.EndpointPut)
-	app.Delete("/cyclone-api/:schema/:table/:uuid/:id", gi.EndpointDelete)
-
-	app.Get("/cyclone-api/get/db-schema", schema.EndpointGet)
-
-	app.Get("/cyclone-api/get/db-table/:schema", table.EndpointGet)
+	app.Get("/cyclone-api/get/db-schema", schema.GetSchema)
+	app.Get("/cyclone-api/get/db-table/:schema", schema.GetTable)
 
 	log.Fatal(app.Listen(addr))
 }

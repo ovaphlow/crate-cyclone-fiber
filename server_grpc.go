@@ -15,7 +15,11 @@ type server struct {
 }
 
 func (s *server) RetrieveSchema(ctx context.Context, in *pb_schema.Empty) (*pb_schema.RetrieveSchemaReply, error) {
-	return &pb_schema.RetrieveSchemaReply{Name: []string{"test", "test1"}}, nil
+	return &pb_schema.RetrieveSchemaReply{Schema: []string{"test", "test1"}}, nil
+}
+
+func (s *server) RetrieveTable(ctx context.Context, in *pb_schema.RetrieveTableRequest) (*pb_schema.RetrieveTableReply, error) {
+	return &pb_schema.RetrieveTableReply{Table: []string{in.Schema, "test table", "test1 table"}}, nil
 }
 
 func GRPCServe(addr string) {
