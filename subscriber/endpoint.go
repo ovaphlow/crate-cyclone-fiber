@@ -123,6 +123,7 @@ func SignIn(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
 	}
 	if subscriber == nil {
+		utility.Slogger.Error("用户不存在")
 		return c.Status(401).JSON(fiber.Map{"message": "用户名或密码错误"})
 	}
 	var detail map[string]interface{}
