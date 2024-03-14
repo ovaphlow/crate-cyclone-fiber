@@ -21,16 +21,18 @@ func main() {
 		log.Fatal(err.Error())
 	}
 	service := os.Getenv("SERVICE")
+	http_port := os.Getenv("HTTP_PORT")
+	grpc_port := os.Getenv("GRPC_PORT")
 
 	service_list := strings.Split(service, ",")
 	for _, item := range service_list {
 		if item == "grpc" {
-			GRPCServe(":50051")
+			GRPCServe(grpc_port)
 		}
 	}
 	for _, item := range service_list {
 		if item == "http" {
-			HTTPServe(":8421")
+			HTTPServe(http_port)
 		}
 	}
 }
