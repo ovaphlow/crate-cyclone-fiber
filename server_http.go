@@ -84,14 +84,11 @@ func HTTPServe(addr string) {
 
 	app.Get("/cyclone-api/db-schema", schema.GetSchema)
 	app.Get("/cyclone-api/:schema/db-table", schema.GetTable)
-	app.Get("/cyclone-api/:schema/:table", schema.Get)
+	// app.Get("/cyclone-api/:schema/:table", schema.Get)
 	app.Get("/cyclone-api/:schema/:table/:uuid/:id", schema.GetWithParams)
 	app.Post("/cyclone-api/:schema/:table", schema.Post)
 	app.Put("/cyclone-api/:schema/:table/:uuid/:id", schema.Put)
 	app.Delete("/cyclone-api/:schema/:table/:uuid/:id", schema.Delete)
-
-	app.Get("/cyclone-api/get/db-schema", schema.GetSchema)
-	app.Get("/cyclone-api/get/db-table/:schema", schema.GetTable)
 
 	log.Fatal(app.Listen(addr))
 }
